@@ -1,0 +1,21 @@
+[package]
+name = "system-theme"
+description = "A cross-platform library for retrieving system theme information."
+version = "0.1.0"
+edition = "2021"
+license = "MIT/Apache-2.0"
+authors = ["Daniel Stuart <daniel.stuart14@gmail.com>"]
+readme = "README.md"
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["UI_ViewManagement", "Foundation_Metadata"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
+zbus = { version = "5.12.0", default-features = false, features = ["blocking-api", "async-io"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.3"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["objc2-core-foundation", "NSAccessibility", "NSAppearance", "NSApplication", "NSColor", "NSResponder", "NSWindow", "NSWorkspace"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["NSArray"] }
