@@ -7,7 +7,7 @@ use windows::{
     },
 };
 
-use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeScheme};
+use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeKind, ThemeScheme};
 
 /// Check if a color is dark or light.
 ///
@@ -74,6 +74,10 @@ impl Platform {
             ui_settings,
             a11y_settings,
         })
+    }
+
+    pub fn theme_kind(&self) -> Result<ThemeKind, Error> {
+        Ok(ThemeKind::Windows)
     }
 
     pub fn theme_scheme(&self) -> Result<ThemeScheme, Error> {

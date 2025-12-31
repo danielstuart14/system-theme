@@ -1,5 +1,4 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md"))]
 //!
 #![warn(missing_docs, rust_2018_idioms, future_incompatible, keyword_idents)]
@@ -8,6 +7,19 @@ pub mod error;
 mod platform;
 
 use error::Error;
+
+/// Theme kind
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum ThemeKind {
+    /// Windows
+    Windows,
+    /// macOS
+    MacOS,
+    /// GTK (GNOME, Cinnamon, Xfce, etc.)
+    Gtk,
+    /// Qt (KDE, LXQt, Deepin, etc.)
+    Qt,
+}
 
 /// Theme scheme
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -51,18 +63,23 @@ impl SystemTheme {
         })
     }
 
+    /// Get the system theme kind.
+    pub fn get_kind(&self) -> Result<ThemeKind, Error> {
+        self.platform.theme_kind()
+    }
+
     /// Get the system theme scheme.
-    pub fn theme_scheme(&self) -> Result<ThemeScheme, Error> {
+    pub fn get_scheme(&self) -> Result<ThemeScheme, Error> {
         self.platform.theme_scheme()
     }
 
     /// Get the system theme contrast level.
-    pub fn theme_contrast(&self) -> Result<ThemeContrast, Error> {
+    pub fn get_contrast(&self) -> Result<ThemeContrast, Error> {
         self.platform.theme_contrast()
     }
 
     /// Get the system theme accent color.
-    pub fn theme_accent(&self) -> Result<ThemeAccent, Error> {
+    pub fn get_accent(&self) -> Result<ThemeAccent, Error> {
         self.platform.theme_accent()
     }
 }

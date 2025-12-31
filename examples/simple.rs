@@ -2,7 +2,8 @@ use system_theme::SystemTheme;
 
 fn main() {
     let theme = SystemTheme::new().unwrap();
-    println!("Theme scheme: {:?}", theme.theme_scheme());
-    println!("Theme contrast: {:?}", theme.theme_contrast());
-    println!("Theme accent: {:?}", theme.theme_accent());
+    println!("Theme kind: {:?}", theme.get_kind());
+    println!("Theme scheme: {:?}", theme.get_scheme());
+    println!("Theme contrast: {:?}", theme.get_contrast());
+    println!("Theme accent: {:?}", theme.get_accent());
 }

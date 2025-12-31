@@ -1,6 +1,10 @@
-use zbus::{blocking::Connection, zvariant::OwnedValue};
+use zbus::{
+    blocking::{fdo::DBusProxy, Connection},
+    names::BusName,
+    zvariant::OwnedValue,
+};
 
-use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeScheme};
+use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeKind, ThemeScheme};
 
 const DESKTOP_PORTAL_DEST: &str = "org.freedesktop.portal.Desktop";
 const DESKTOP_PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
@@ -15,6 +19,8 @@ const ACCENT_COLOR_KEY: &str = "accent-color";
 const PORTAL_NOT_FOUND: &str = "org.freedesktop.portal.Error.NotFound";
 const DBUS_UNKNOWN_SERVICE: &str = "org.freedesktop.DBus.Error.ServiceUnknown";
 const DBUS_UNKNOWN_METHOD: &str = "org.freedesktop.DBus.Error.UnknownMethod";
+
+const GTK_PORTAL_IMPL: &str = "org.freedesktop.impl.portal.desktop.gtk";
 
 impl From<zbus::Error> for Error {
     fn from(value: zbus::Error) -> Self {
@@ -40,7 +46,7 @@ impl From<zbus::Error> for Error {
 
 /// Check if color component is valid
 fn check_color_component(component: f64) -> bool {
-    component >= 0.0 && component <= 1.0
+    (0.0..=1.0).contains(&component)
 }
 
 pub struct Platform {
@@ -51,6 +57,20 @@ impl Platform {
     pub fn new() -> Result<Self, Error> {
         let conn = Connection::session()?;
         Ok(Self { conn })
+    }
+
+    pub fn theme_kind(&self) -> Result<ThemeKind, Error> {
+        if self.check_has_owner(
+            GTK_PORTAL_IMPL
+                .try_into()
+                .expect("Failed to convert GTK_PORTAL_IMPL"),
+        )? {
+            // If we have GTK Portal, we're using GTK
+            Ok(ThemeKind::Gtk)
+        } else {
+            // Anything else will be Qt
+            Ok(ThemeKind::Qt)
+        }
     }
 
     pub fn theme_scheme(&self) -> Result<ThemeScheme, Error> {
@@ -91,6 +111,16 @@ impl Platform {
             green: accent.1 as f32,
             blue: accent.2 as f32,
         })
+    }
+
+    fn check_has_owner(&self, name: BusName<'_>) -> Result<bool, Error> {
+        let proxy = DBusProxy::new(&self.conn)?;
+
+        match proxy.get_name_owner(name) {
+            Ok(_) => Ok(true),
+            Err(zbus::fdo::Error::NameHasNoOwner(_)) => Ok(false),
+            Err(e) => Err(Error::from_platform(e)),
+        }
     }
 
     fn get_settings_apperance<T: TryFrom<OwnedValue>>(&self, key: &str) -> Result<T, Error> {

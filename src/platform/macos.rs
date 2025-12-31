@@ -5,7 +5,7 @@ use objc2_app_kit::{
 };
 use objc2_foundation::NSArray;
 
-use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeScheme};
+use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeKind, ThemeScheme};
 
 /// Check if the given NSAppearance is dark.
 fn is_appearance_dark(appearance: Retained<NSAppearance>) -> bool {
@@ -40,6 +40,10 @@ impl Platform {
             workspace: NSWorkspace::sharedWorkspace(),
             application,
         })
+    }
+
+    pub fn theme_kind(&self) -> Result<ThemeKind, Error> {
+        Ok(ThemeKind::MacOS)
     }
 
     pub fn theme_scheme(&self) -> Result<ThemeScheme, Error> {
