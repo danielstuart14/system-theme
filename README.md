@@ -5,12 +5,39 @@
 [docs]: https://docs.rs/system-theme/badge.svg
 [docs.rs]: https://docs.rs/system-theme
 
-A cross-platform library for retrieving system theme information.
+A cross-platform Rust library to help build native-looking applications.
 
-Provides functions to retrieve (if available) the current system theme scheme,
-contrast level, and accent color.
+It provides access (when supported by the platform) to:
 
-Compatible with Windows, macOS, and Linux.
+- System theme kind (Windows, macOS, GTK, or Qt)
+- System theme scheme (light or dark)
+- System contrast level (normal or high)
+- System accent color
+
+It also includes predefined theme palettes designed to match native applications.
+
+## Roadmap
+
+🚧 Platforms\
+&nbsp;&nbsp;&nbsp;&nbsp;🟢 Windows\
+&nbsp;&nbsp;&nbsp;&nbsp;🟢 macOS\
+&nbsp;&nbsp;&nbsp;&nbsp;🚧 XDG (Linux, FreeBSD, etc.)\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🟢 GTK (e.g. GNOME)\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🟢 Qt (e.g. KDE)\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🚧 Cosmic (detected as GTK theme kind)\
+&nbsp;&nbsp;&nbsp;&nbsp;🔴 Web\
+&nbsp;&nbsp;&nbsp;&nbsp;🔴 Android\
+&nbsp;&nbsp;&nbsp;&nbsp;🔴 iOS
+
+🚧 Theming\
+&nbsp;&nbsp;&nbsp;&nbsp;🟢 Default color palette (Fluent, Aqua, Adwaita, Breeze)\
+&nbsp;&nbsp;&nbsp;&nbsp;🔴 Custom color palette (user-defined system themes)\
+&nbsp;&nbsp;&nbsp;&nbsp;🔴 Subscription to theme changes (async)
+
+🚧 Integrations\
+&nbsp;&nbsp;&nbsp;&nbsp;🚧 Iced (feature: `iced`)\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🟢 Palette\
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔴 Widget Themes
 
 ## License
 

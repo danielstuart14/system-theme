@@ -1,11 +1,11 @@
 use objc2::{available, rc::Retained, MainThreadMarker};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceNameAqua, NSAppearanceNameDarkAqua, NSApplication, NSColor,
-    NSWorkspace,
+    NSColorSpace, NSWorkspace,
 };
 use objc2_foundation::NSArray;
 
-use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeKind, ThemeScheme};
+use crate::{error::Error, ThemeColor, ThemeContrast, ThemeKind, ThemeScheme};
 
 /// Check if the given NSAppearance is dark.
 fn is_appearance_dark(appearance: Retained<NSAppearance>) -> bool {
@@ -79,18 +79,21 @@ impl Platform {
         Ok(contrast)
     }
 
-    pub fn theme_accent(&self) -> Result<ThemeAccent, Error> {
+    pub fn theme_accent(&self) -> Result<ThemeColor, Error> {
         // Method used is supported since 10.14
         if !available!(macos = 10.14) {
             return Err(Error::Unsupported);
         }
 
-        let accent_color = NSColor::controlAccentColor();
-
-        Ok(ThemeAccent {
-            red: accent_color.redComponent() as f32,
-            green: accent_color.greenComponent() as f32,
-            blue: accent_color.blueComponent() as f32,
-        })
+        match NSColor::controlAccentColor()
+            .colorUsingColorSpace(&NSColorSpace::genericRGBColorSpace())
+        {
+            Some(color) => Ok(ThemeColor {
+                red: color.redComponent() as f32,
+                green: color.greenComponent() as f32,
+                blue: color.blueComponent() as f32,
+            }),
+            None => Err(Error::Unavailable),
+        }
     }
 }

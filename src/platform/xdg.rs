@@ -4,7 +4,7 @@ use zbus::{
     zvariant::OwnedValue,
 };
 
-use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeKind, ThemeScheme};
+use crate::{error::Error, ThemeColor, ThemeContrast, ThemeKind, ThemeScheme};
 
 const DESKTOP_PORTAL_DEST: &str = "org.freedesktop.portal.Desktop";
 const DESKTOP_PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
@@ -68,7 +68,7 @@ impl Platform {
             // If we have GTK Portal, we're using GTK
             Ok(ThemeKind::Gtk)
         } else {
-            // Anything else will be Qt
+            // Anything else should be Qt
             Ok(ThemeKind::Qt)
         }
     }
@@ -95,7 +95,7 @@ impl Platform {
         }
     }
 
-    pub fn theme_accent(&self) -> Result<ThemeAccent, Error> {
+    pub fn theme_accent(&self) -> Result<ThemeColor, Error> {
         let accent: (f64, f64, f64) = self.get_settings_apperance(ACCENT_COLOR_KEY)?;
 
         // Check color components range (invalid -> not configured)
@@ -106,7 +106,7 @@ impl Platform {
             return Err(Error::Unavailable);
         }
 
-        Ok(ThemeAccent {
+        Ok(ThemeColor {
             red: accent.0 as f32,
             green: accent.1 as f32,
             blue: accent.2 as f32,

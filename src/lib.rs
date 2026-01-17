@@ -4,55 +4,47 @@
 #![warn(missing_docs, rust_2018_idioms, future_incompatible, keyword_idents)]
 
 pub mod error;
+mod integration;
 mod platform;
+mod theme;
 
 use error::Error;
 
-/// Theme kind
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum ThemeKind {
-    /// Windows
-    Windows,
-    /// macOS
-    MacOS,
-    /// GTK (GNOME, Cinnamon, Xfce, etc.)
-    Gtk,
-    /// Qt (KDE, LXQt, Deepin, etc.)
-    Qt,
-}
-
-/// Theme scheme
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum ThemeScheme {
-    /// Light mode
-    Light,
-    /// Dark mode
-    Dark,
-}
-
-/// Theme contrast
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum ThemeContrast {
-    /// Normal contrast
-    Normal,
-    /// High contrast
-    High,
-}
-
-/// Theme accent color
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct ThemeAccent {
-    /// Red component (0.0 - 1.0)
-    pub red: f32,
-    /// Green component (0.0 - 1.0)
-    pub green: f32,
-    /// Blue component (0.0 - 1.0)
-    pub blue: f32,
-}
+#[doc(inline)]
+pub use theme::{ThemeColor, ThemeContrast, ThemeKind, ThemePalette, ThemeScheme};
 
 /// System theme implementation.
 pub struct SystemTheme {
     platform: platform::Platform,
+}
+
+impl AsRef<SystemTheme> for SystemTheme {
+    fn as_ref(&self) -> &SystemTheme {
+        self
+    }
+}
+
+impl From<SystemTheme> for ThemePalette {
+    fn from(theme: SystemTheme) -> Self {
+        (&theme).into()
+    }
+}
+
+impl From<&SystemTheme> for ThemePalette {
+    fn from(theme: &SystemTheme) -> Self {
+        let kind = theme.get_kind().unwrap_or_default();
+
+        let scheme = theme.get_scheme().unwrap_or_default();
+        let contrast = theme.get_contrast().unwrap_or_default();
+
+        let mut palette = ThemePalette::system_palette(kind, scheme, contrast);
+
+        if let Ok(accent) = theme.get_accent() {
+            palette.accent = accent;
+        };
+
+        palette
+    }
 }
 
 impl SystemTheme {
@@ -79,7 +71,7 @@ impl SystemTheme {
     }
 
     /// Get the system theme accent color.
-    pub fn get_accent(&self) -> Result<ThemeAccent, Error> {
+    pub fn get_accent(&self) -> Result<ThemeColor, Error> {
         self.platform.theme_accent()
     }
 }

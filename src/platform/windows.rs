@@ -7,22 +7,16 @@ use windows::{
     },
 };
 
-use crate::{error::Error, ThemeAccent, ThemeContrast, ThemeKind, ThemeScheme};
+use crate::{error::Error, ThemeColor, ThemeContrast, ThemeKind, ThemeScheme};
 
-/// Check if a color is dark or light.
-///
-/// Converts RGB values to relative luminance and
-/// checks if it is bellow half the scale.
-fn is_color_dark(color: Color) -> bool {
-    // https://en.wikipedia.org/wiki/Relative_luminance
-    const READ_WEIGHT: f32 = 0.2126;
-    const GREEN_WEIGHT: f32 = 0.7152;
-    const BLUE_WEIGHT: f32 = 0.0722;
-
-    let luminance = (color.R as f32 * READ_WEIGHT)
-        + (color.G as f32 * GREEN_WEIGHT)
-        + (color.B as f32 * BLUE_WEIGHT);
-    luminance < 0.5
+impl From<Color> for ThemeColor {
+    fn from(color: Color) -> Self {
+        ThemeColor {
+            red: color.R as f32 / 255.0,
+            green: color.G as f32 / 255.0,
+            blue: color.B as f32 / 255.0,
+        }
+    }
 }
 
 // Check if GetColorValue is supported
@@ -82,13 +76,12 @@ impl Platform {
 
     pub fn theme_scheme(&self) -> Result<ThemeScheme, Error> {
         // Get the background color reported by windows and check if dark
-        Ok(
-            if is_color_dark(self.get_ui_color(UIColorType::Background)?) {
-                ThemeScheme::Dark
-            } else {
-                ThemeScheme::Light
-            },
-        )
+        let background = self.get_ui_color(UIColorType::Background)?;
+        Ok(if ThemeColor::from(background).is_dark() {
+            ThemeScheme::Dark
+        } else {
+            ThemeScheme::Light
+        })
     }
 
     pub fn theme_contrast(&self) -> Result<ThemeContrast, Error> {
@@ -110,14 +103,10 @@ impl Platform {
             .unwrap_or(Err(Error::Unsupported))
     }
 
-    pub fn theme_accent(&self) -> Result<ThemeAccent, Error> {
+    pub fn theme_accent(&self) -> Result<ThemeColor, Error> {
         // Get main accent color. Ignoring accent shades for now.
         self.get_ui_color(UIColorType::Accent)
-            .map(|color| ThemeAccent {
-                red: color.R as f32 / 255.0,
-                green: color.G as f32 / 255.0,
-                blue: color.B as f32 / 255.0,
-            })
+            .map(|color| color.into())
     }
 
     fn get_ui_color(&self, color_type: UIColorType) -> Result<Color, Error> {
