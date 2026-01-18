@@ -18,7 +18,7 @@ iced = { version = "0.14", optional = true }
 windows = { version = "0.62.2", features = ["UI_ViewManagement", "Foundation_Metadata"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
-zbus = { version = "5.12.0", default-features = false, features = ["blocking-api", "async-io"] }
+zbus = "5.13.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.3"

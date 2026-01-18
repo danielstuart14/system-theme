@@ -18,7 +18,7 @@ It also includes predefined theme palettes designed to match native applications
 
 ## Roadmap
 
-🚧 Platforms\
+🚧 **Platforms**\
 &nbsp;&nbsp;&nbsp;&nbsp;🟢 Windows\
 &nbsp;&nbsp;&nbsp;&nbsp;🟢 macOS\
 &nbsp;&nbsp;&nbsp;&nbsp;🚧 XDG (Linux, FreeBSD, etc.)\
@@ -29,12 +29,12 @@ It also includes predefined theme palettes designed to match native applications
 &nbsp;&nbsp;&nbsp;&nbsp;🔴 Android\
 &nbsp;&nbsp;&nbsp;&nbsp;🔴 iOS
 
-🚧 Theming\
+🚧 **Theming**\
 &nbsp;&nbsp;&nbsp;&nbsp;🟢 Default color palette (Fluent, Aqua, Adwaita, Breeze)\
 &nbsp;&nbsp;&nbsp;&nbsp;🔴 Custom color palette (user-defined system themes)\
 &nbsp;&nbsp;&nbsp;&nbsp;🔴 Subscription to theme changes (async)
 
-🚧 Integrations\
+🚧 **Integrations**\
 &nbsp;&nbsp;&nbsp;&nbsp;🚧 Iced (feature: `iced`)\
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🟢 Palette\
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔴 Widget Themes

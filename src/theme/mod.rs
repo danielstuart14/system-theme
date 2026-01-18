@@ -1,6 +1,8 @@
 //! Theme definitions
 mod palette;
 
+use std::fmt::Debug;
+
 #[doc(inline)]
 pub use palette::ThemePalette;
 
@@ -25,7 +27,7 @@ pub enum ThemeContrast {
 }
 
 /// Theme color
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct ThemeColor {
     /// Red component (0.0 - 1.0)
     pub red: f32,
@@ -33,6 +35,18 @@ pub struct ThemeColor {
     pub green: f32,
     /// Blue component (0.0 - 1.0)
     pub blue: f32,
+}
+
+impl Debug for ThemeColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "#{:02X}{:02X}{:02X}",
+            (self.red * 255.0) as u8,
+            (self.green * 255.0) as u8,
+            (self.blue * 255.0) as u8
+        )
+    }
 }
 
 impl ThemeColor {
@@ -58,33 +72,19 @@ impl ThemeColor {
             blue: blue as f32 / 255.0,
         }
     }
-
-    /// Check if a color is dark.
-    pub fn is_dark(&self) -> bool {
-        // Conversion from: https://en.wikipedia.org/wiki/Oklab_color_space#Conversions_between_color_spaces
-
-        // Convert RGB to LMS
-        let l = 0.41222146 * self.red + 0.53633255 * self.green + 0.051445995 * self.blue;
-        let m = 0.2119035 * self.red + 0.6806995 * self.green + 0.10739696 * self.blue;
-        let s = 0.08830246 * self.red + 0.28171885 * self.green + 0.6299787 * self.blue;
-
-        // Convert LMS to Oklab perceptual lightness
-        let oklab_l = 0.21045426 * l.cbrt() + 0.7936178 * m.cbrt() - 0.004072047 * s.cbrt();
-
-        // A color is considered dark if its Oklab perceptual lightness is below half the scale
-        oklab_l < 0.5
-    }
 }
 
 /// Theme kind
 #[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub enum ThemeKind {
     /// Microsoft Windows
+    #[cfg_attr(target_os = "windows", default)]
     Windows,
     /// Apple MacOS
+    #[cfg_attr(target_os = "macos", default)]
     MacOS,
     /// GTK (GNOME)
-    #[default]
+    #[cfg_attr(not(any(target_os = "windows", target_os = "macos")), default)]
     Gtk,
     /// Qt (KDE)
     Qt,

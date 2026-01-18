@@ -101,6 +101,7 @@ const BREEZE_DARK: ThemePalette = ThemePalette {
 };
 
 /// Theme Palette
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ThemePalette {
     /// Background color
     pub background: ThemeColor,

@@ -77,7 +77,10 @@ impl Platform {
     pub fn theme_scheme(&self) -> Result<ThemeScheme, Error> {
         // Get the background color reported by windows and check if dark
         let background = self.get_ui_color(UIColorType::Background)?;
-        Ok(if ThemeColor::from(background).is_dark() {
+
+        // Simple way for checking if it is dark. Windows returns #000 or #FFF anyways.
+        let color_sum = background.R as u16 + background.G as u16 + background.B as u16;
+        Ok(if color_sum < 3 * 128 {
             ThemeScheme::Dark
         } else {
             ThemeScheme::Light
