@@ -1,5 +1,10 @@
+use std::{
+    sync::{Arc, LazyLock, OnceLock},
+    thread::{self, JoinHandle},
+};
+use tokio::sync::Notify;
 use zbus::{
-    blocking::{fdo::DBusProxy, Connection},
+    blocking::{fdo::DBusProxy, Connection, Proxy},
     names::BusName,
     zvariant::OwnedValue,
 };
@@ -10,6 +15,7 @@ const DESKTOP_PORTAL_DEST: &str = "org.freedesktop.portal.Desktop";
 const DESKTOP_PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
 const SETTINGS_INTERFACE: &str = "org.freedesktop.portal.Settings";
 const READ_METHOD: &str = "ReadOne";
+const CHANGE_SIGNAL: &str = "SettingChanged";
 const APPERANCE_NAMESPACE: &str = "org.freedesktop.appearance";
 
 const COLOR_SCHEME_KEY: &str = "color-scheme";
@@ -21,6 +27,9 @@ const DBUS_UNKNOWN_SERVICE: &str = "org.freedesktop.DBus.Error.ServiceUnknown";
 const DBUS_UNKNOWN_METHOD: &str = "org.freedesktop.DBus.Error.UnknownMethod";
 
 const GTK_PORTAL_IMPL: &str = "org.freedesktop.impl.portal.desktop.gtk";
+
+static WATCHER_NOTIFY: LazyLock<Arc<Notify>> = LazyLock::new(|| Arc::new(Notify::new()));
+static WATCHER_HANDLE: OnceLock<JoinHandle<()>> = OnceLock::new();
 
 impl From<zbus::Error> for Error {
     fn from(value: zbus::Error) -> Self {
@@ -56,6 +65,27 @@ pub struct Platform {
 impl Platform {
     pub fn new() -> Result<Self, Error> {
         let conn = Connection::session()?;
+
+        // Create change watcher (ignore errors, not that important)
+        let conn_cloned = conn.clone();
+        if let Ok(proxy) = Proxy::new(
+            &conn_cloned,
+            DESKTOP_PORTAL_DEST,
+            DESKTOP_PORTAL_PATH,
+            SETTINGS_INTERFACE,
+        ) {
+            if let Ok(signal) = proxy.receive_signal(CHANGE_SIGNAL) {
+                // Create background thread a single time
+                WATCHER_HANDLE.get_or_init(|| {
+                    thread::spawn(move || {
+                        for _ in signal {
+                            (*WATCHER_NOTIFY).notify_waiters();
+                        }
+                    })
+                });
+            }
+        }
+
         Ok(Self { conn })
     }
 
@@ -76,22 +106,22 @@ impl Platform {
     pub fn theme_scheme(&self) -> Result<ThemeScheme, Error> {
         let scheme: u32 = self.get_settings_apperance(COLOR_SCHEME_KEY)?;
 
-        // 1 = dark, 2 = light
-        match scheme {
-            1 => Ok(ThemeScheme::Dark),
-            2 => Ok(ThemeScheme::Light),
-            _ => Err(Error::Unavailable),
+        // 1 = dark
+        if scheme == 1 {
+            Ok(ThemeScheme::Dark)
+        } else {
+            Ok(ThemeScheme::Light)
         }
     }
 
     pub fn theme_contrast(&self) -> Result<ThemeContrast, Error> {
         let contrast: u32 = self.get_settings_apperance(CONTRAST_KEY)?;
 
-        // 0 = normal, 1 = high
-        match contrast {
-            0 => Ok(ThemeContrast::Normal),
-            1 => Ok(ThemeContrast::High),
-            _ => Err(Error::Unavailable),
+        // 1 = high
+        if contrast == 1 {
+            Ok(ThemeContrast::High)
+        } else {
+            Ok(ThemeContrast::Normal)
         }
     }
 
@@ -111,6 +141,10 @@ impl Platform {
             green: accent.1 as f32,
             blue: accent.2 as f32,
         })
+    }
+
+    pub fn get_notify(&self) -> Arc<Notify> {
+        (*WATCHER_NOTIFY).clone()
     }
 
     fn check_has_owner(&self, name: BusName<'_>) -> Result<bool, Error> {

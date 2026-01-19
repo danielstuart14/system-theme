@@ -1,4 +1,4 @@
-use system_theme::{SystemTheme, ThemePalette};
+use system_theme::SystemTheme;
 
 fn main() {
     let theme = SystemTheme::new().unwrap();
@@ -7,6 +7,6 @@ fn main() {
     println!("Theme contrast: {:?}", theme.get_contrast());
     println!("Theme accent: {:?}", theme.get_accent());
 
-    // Full theme palette (with fallbacks for unsupported methods)
-    println!("Theme palette: {:?}", ThemePalette::from(theme));
+    // Full theme (with fallbacks for unsupported methods)
+    println!("Theme: {:?}", theme.get_theme());
 }

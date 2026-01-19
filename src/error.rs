@@ -8,6 +8,8 @@ pub enum Error {
     Unsupported,
     /// Data not available (or invalid).
     Unavailable,
+    /// Main thread required error.
+    MainThreadRequired,
     /// Internal platform error.
     Platform(Box<dyn std::error::Error + Send + Sync>),
 }
@@ -17,6 +19,7 @@ impl Display for Error {
         match self {
             Error::Unsupported => write!(f, "Unsupported operation"),
             Error::Unavailable => write!(f, "Unavailable data"),
+            Error::MainThreadRequired => write!(f, "Main thread required"),
             Error::Platform(err) => write!(f, "Platform error: {}", err),
         }
     }

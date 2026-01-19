@@ -1,6 +1,6 @@
 [package]
 name = "system-theme"
-description = "A cross-platform library for retrieving system theme information."
+description = "A cross-platform Rust library to help build native-looking applications."
 version = "0.2.0"
 authors = ["Daniel Stuart <daniel.stuart14@gmail.com>"]
 repository = "https://github.com/danielstuart14/system-theme"
@@ -12,7 +12,12 @@ edition = "2021"
 readme = "README.md"
 
 [dependencies]
+async-stream = "0.3.6"
+futures-core = "0.3.31"
+futures-util = "0.3.31"
 iced = { version = "0.14", optional = true }
+tokio = { version = "1.49.0", features = ["sync"] }
+uuid = { version = "1.19.0", features = ["v4"] }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62.2", features = ["UI_ViewManagement", "Foundation_Metadata"] }
@@ -23,11 +28,18 @@ zbus = "5.13.1"
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.3"
 objc2-app-kit = { version = "0.3.2", default-features = false, features = ["objc2-core-foundation", "NSAccessibility", "NSAppearance", "NSApplication", "NSColor", "NSColorSpace", "NSResponder", "NSWindow", "NSWorkspace"] }
-objc2-foundation = { version = "0.3.2", default-features = false, features = ["NSArray"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["NSArray", "NSString", "NSKeyValueObserving", "NSDictionary", "NSNotification", "NSDistributedNotificationCenter"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
 
 [features]
 default = []
 iced = ["dep:iced"]
+
+[[example]]
+name = "async"
+path = "examples/async.rs"
 
 [[example]]
 name = "iced"

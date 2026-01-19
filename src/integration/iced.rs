@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{SystemTheme, ThemeColor, ThemePalette};
+use crate::{Theme, ThemeColor, ThemePalette};
 
 impl Into<iced::Color> for ThemeColor {
     fn into(self) -> iced::Color {
@@ -26,17 +26,20 @@ impl Into<iced::theme::Palette> for ThemePalette {
     }
 }
 
-impl Into<iced::Theme> for SystemTheme {
-    fn into(self) -> iced::Theme {
-        (&self).into()
+impl Into<iced::theme::Theme> for ThemePalette {
+    fn into(self) -> iced::theme::Theme {
+        iced::theme::Theme::Custom(Arc::new(iced::theme::Custom::new(
+            String::from("SystemTheme"),
+            self.into(),
+        )))
     }
 }
 
-impl Into<iced::Theme> for &SystemTheme {
-    fn into(self) -> iced::Theme {
-        let palette = ThemePalette::from(self);
-        let theme = iced::theme::Custom::new(String::from("SystemTheme"), palette.into());
-
-        iced::Theme::Custom(Arc::new(theme))
+impl Into<iced::theme::Theme> for Theme {
+    fn into(self) -> iced::theme::Theme {
+        iced::theme::Theme::Custom(Arc::new(iced::theme::Custom::new(
+            String::from(self.name),
+            self.palette.into(),
+        )))
     }
 }

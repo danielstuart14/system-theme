@@ -1,6 +1,8 @@
+use std::sync::Arc;
+use tokio::sync::Notify;
 use windows::{
     core::HSTRING,
-    Foundation::Metadata::ApiInformation,
+    Foundation::{Metadata::ApiInformation, TypedEventHandler},
     UI::{
         Color,
         ViewManagement::{AccessibilitySettings, UIColorType, UISettings},
@@ -46,13 +48,25 @@ fn check_high_contrast_supported() -> Result<bool, Error> {
 pub struct Platform {
     ui_settings: Option<UISettings>,
     a11y_settings: Option<AccessibilitySettings>,
+    notify: Arc<Notify>,
 }
 
 impl Platform {
     pub fn new() -> Result<Self, Error> {
+        let notify = Arc::new(Notify::new());
+
         // Check if GetColorValue is supported
         let ui_settings = if check_color_supported()? {
-            Some(UISettings::new().map_err(Error::from_platform)?)
+            let ui_settings = UISettings::new().map_err(Error::from_platform)?;
+
+            // Create change watcher (ignore errors, not that important)
+            let notify_cloned = notify.clone();
+            let _ = ui_settings.ColorValuesChanged(&TypedEventHandler::new(move |_, _| {
+                notify_cloned.notify_waiters();
+                Ok(())
+            }));
+
+            Some(ui_settings)
         } else {
             None
         };
@@ -67,6 +81,7 @@ impl Platform {
         Ok(Platform {
             ui_settings,
             a11y_settings,
+            notify,
         })
     }
 
@@ -110,6 +125,10 @@ impl Platform {
         // Get main accent color. Ignoring accent shades for now.
         self.get_ui_color(UIColorType::Accent)
             .map(|color| color.into())
+    }
+
+    pub fn get_notify(&self) -> Arc<Notify> {
+        self.notify.clone()
     }
 
     fn get_ui_color(&self, color_type: UIColorType) -> Result<Color, Error> {

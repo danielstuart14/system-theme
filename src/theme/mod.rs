@@ -10,9 +10,9 @@ pub use palette::ThemePalette;
 #[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub enum ThemeScheme {
     /// Light mode
+    #[default]
     Light,
     /// Dark mode
-    #[default]
     Dark,
 }
 
@@ -88,4 +88,77 @@ pub enum ThemeKind {
     Gtk,
     /// Qt (KDE)
     Qt,
+}
+
+/// Theme
+#[derive(Debug, Clone, PartialEq)]
+pub struct Theme {
+    /// Theme name
+    pub name: String,
+    /// Theme palette
+    pub palette: ThemePalette,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Theme::new(
+            ThemeKind::default(),
+            ThemeScheme::default(),
+            ThemeContrast::default(),
+            None,
+        )
+    }
+}
+
+impl Theme {
+    /// Get the theme for the given theme kind, scheme, contrast, and (optionally) accent color.
+    pub fn new(
+        kind: ThemeKind,
+        scheme: ThemeScheme,
+        contrast: ThemeContrast,
+        accent: Option<ThemeColor>,
+    ) -> Self {
+        let (mut name, mut palette) = match kind {
+            ThemeKind::Windows => match scheme {
+                ThemeScheme::Light => ("FluentLight".to_string(), palette::FLUENT_LIGHT),
+                ThemeScheme::Dark => ("FluentDark".to_string(), palette::FLUENT_DARK),
+            },
+            ThemeKind::MacOS => match scheme {
+                ThemeScheme::Light => ("AquaLight".to_string(), palette::AQUA_LIGHT),
+                ThemeScheme::Dark => ("AquaDark".to_string(), palette::AQUA_DARK),
+            },
+            ThemeKind::Gtk => match scheme {
+                ThemeScheme::Light => ("AdwaitaLight".to_string(), palette::ADWAITA_LIGHT),
+                ThemeScheme::Dark => ("AdwaitaDark".to_string(), palette::ADWAITA_DARK),
+            },
+            ThemeKind::Qt => match scheme {
+                ThemeScheme::Light => ("BreezeLight".to_string(), palette::BREEZE_LIGHT),
+                ThemeScheme::Dark => ("BreezeDark".to_string(), palette::BREEZE_DARK),
+            },
+        };
+
+        // Change background/foreground colors if high contrast
+        if contrast == ThemeContrast::High {
+            // Append to name the variant
+            name.push_str("HC");
+
+            match scheme {
+                ThemeScheme::Light => {
+                    palette.background = ThemeColor::WHITE;
+                    palette.foreground = ThemeColor::BLACK;
+                }
+                ThemeScheme::Dark => {
+                    palette.background = ThemeColor::BLACK;
+                    palette.foreground = ThemeColor::WHITE;
+                }
+            }
+        }
+
+        // Set accent color if provided
+        if let Some(accent) = accent {
+            palette.accent = accent;
+        }
+
+        Theme { name, palette }
+    }
 }

@@ -1,28 +1,73 @@
 use iced::widget::{button, center, column, row, text};
+use iced::Subscription;
 use iced::{Center, Element, Theme};
+use std::sync::Arc;
 use system_theme::SystemTheme;
 
 pub fn main() -> iced::Result {
-    let theme = SystemTheme::new()
-        .map(|sys_theme| sys_theme.into())
-        .unwrap_or(Theme::Light);
-
-    iced::application(ThemeApp::default, ThemeApp::update, ThemeApp::view)
-        .theme(theme)
+    iced::application(ThemeApp::new, ThemeApp::update, ThemeApp::view)
+        .theme(ThemeApp::theme)
+        .subscription(ThemeApp::subscription)
         .run()
 }
 
-#[derive(Default)]
-struct ThemeApp {}
+struct ThemeApp {
+    sys_theme: Option<Arc<SystemTheme>>,
+    theme: Theme,
+}
 
 #[derive(Debug, Clone)]
 enum Message {
     Clicked,
+    ThemeChanged,
 }
 
 impl ThemeApp {
+    fn new() -> Self {
+        let sys_theme = SystemTheme::new().ok();
+
+        let theme = sys_theme
+            .as_ref()
+            .map(|sys_theme| sys_theme.get_theme().into())
+            .unwrap_or(Theme::Light);
+
+        Self {
+            sys_theme: sys_theme.map(Arc::new),
+            theme,
+        }
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        let mut subscriptions = Vec::new();
+
+        if let Some(sys_theme) = self.sys_theme.clone() {
+            subscriptions.push(
+                Subscription::run_with(sys_theme, |sys_theme| sys_theme.subscribe())
+                    .map(|_| Message::ThemeChanged),
+            )
+        }
+
+        Subscription::batch(subscriptions)
+    }
+
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::ThemeChanged => {
+                // Get the new system theme
+                self.sys_theme.as_ref().map(|sys_theme| {
+                    self.theme = sys_theme.get_theme().into();
+                });
+            }
+            _ => {} // Do nothing
+        }
+    }
+
+    fn theme(&self) -> Theme {
+        self.theme.clone()
+    }
+
     fn view(&self) -> Element<'_, Message> {
-        let txt = text!("Hello, World!");
+        let txt = text(format!("Theme: {}", self.theme));
 
         let button = |label| button(text(label).align_x(Center)).padding(10).width(80);
 
@@ -44,6 +89,4 @@ impl ThemeApp {
 
         center(content).into()
     }
-
-    fn update(&mut self, _message: Message) {}
 }
