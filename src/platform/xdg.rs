@@ -1,3 +1,5 @@
+use async_stream::stream;
+use futures_core::stream::Stream;
 use std::{
     sync::{Arc, LazyLock, OnceLock},
     thread::{self, JoinHandle},
@@ -143,8 +145,18 @@ impl Platform {
         })
     }
 
-    pub fn get_notify(&self) -> Arc<Notify> {
-        (*WATCHER_NOTIFY).clone()
+    pub fn subscribe(&self) -> impl Stream<Item = ()> {
+        let notify = WATCHER_NOTIFY.as_ref();
+        stream! {
+            let mut notified = notify.notified();
+            loop {
+                // Wait for notification
+                notified.await;
+                // Create new notified before yielding
+                notified = notify.notified();
+                yield ();
+            }
+        }
     }
 
     fn check_has_owner(&self, name: BusName<'_>) -> Result<bool, Error> {
