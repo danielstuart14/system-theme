@@ -1,9 +1,6 @@
 use async_stream::stream;
 use futures_core::stream::Stream;
-use std::{
-    sync::{Arc, LazyLock, OnceLock},
-    thread::{self, JoinHandle},
-};
+use std::sync::Arc;
 use tokio::sync::Notify;
 use zbus::{
     blocking::{fdo::DBusProxy, Connection, Proxy},
@@ -29,9 +26,6 @@ const DBUS_UNKNOWN_SERVICE: &str = "org.freedesktop.DBus.Error.ServiceUnknown";
 const DBUS_UNKNOWN_METHOD: &str = "org.freedesktop.DBus.Error.UnknownMethod";
 
 const GTK_PORTAL_IMPL: &str = "org.freedesktop.impl.portal.desktop.gtk";
-
-static WATCHER_NOTIFY: LazyLock<Arc<Notify>> = LazyLock::new(|| Arc::new(Notify::new()));
-static WATCHER_HANDLE: OnceLock<JoinHandle<()>> = OnceLock::new();
 
 impl From<zbus::Error> for Error {
     fn from(value: zbus::Error) -> Self {
@@ -62,6 +56,11 @@ fn check_color_component(component: f64) -> bool {
 
 pub struct Platform {
     conn: Connection,
+    notify: Option<Arc<NotifyState>>,
+}
+pub struct NotifyState {
+    change_signal_stream: tokio::sync::Mutex<zbus::proxy::SignalStream<'static>>,
+    notify_others: tokio::sync::Notify,
 }
 
 impl Platform {
@@ -69,26 +68,26 @@ impl Platform {
         let conn = Connection::session()?;
 
         // Create change watcher (ignore errors, not that important)
-        let conn_cloned = conn.clone();
-        if let Ok(proxy) = Proxy::new(
-            &conn_cloned,
+        let notify = Proxy::new(
+            &conn,
             DESKTOP_PORTAL_DEST,
             DESKTOP_PORTAL_PATH,
             SETTINGS_INTERFACE,
-        ) {
-            if let Ok(signal) = proxy.receive_signal(CHANGE_SIGNAL) {
-                // Create background thread a single time
-                WATCHER_HANDLE.get_or_init(|| {
-                    thread::spawn(move || {
-                        for _ in signal {
-                            (*WATCHER_NOTIFY).notify_waiters();
-                        }
-                    })
-                });
-            }
-        }
+        )
+        .ok()
+        .and_then(|proxy| {
+            // Access the inner (async) state and request an async Stream
+            // instead of a sync Iterator.
+            futures_lite::future::block_on(proxy.inner().receive_signal(CHANGE_SIGNAL)).ok()
+        })
+        .map(|stream| {
+            Arc::new(NotifyState {
+                change_signal_stream: stream.into(),
+                notify_others: Notify::default(),
+            })
+        });
 
-        Ok(Self { conn })
+        Ok(Self { conn, notify })
     }
 
     pub fn theme_kind(&self) -> Result<ThemeKind, Error> {
@@ -146,15 +145,38 @@ impl Platform {
     }
 
     pub fn subscribe(&self) -> impl Stream<Item = ()> {
-        let notify = WATCHER_NOTIFY.as_ref();
+        use futures_util::stream::StreamExt;
+        let state = self.notify.clone();
+
+        // Since the `change_signal_stream` requires `&mut self` we have to do
+        // some tricks here: The first task to arrive here is the "server" who
+        // polls the mutex'd stream and notifies the others when a message is
+        // recieved. The rest are clients who listen only to the notifier.
         stream! {
-            let mut notified = notify.notified();
-            loop {
-                // Wait for notification
-                notified.await;
-                // Create new notified before yielding
-                notified = notify.notified();
-                yield ();
+            if let Some(state) = state {
+                loop {
+                    let server = async {
+                        let mut lock = state.change_signal_stream.lock().await;
+                        if lock.next().await.is_none() {
+                            // Listener is closed. Never signals.
+                            return futures_util::future::pending().await;
+                        };
+                        // Got a message! Notify the others (including
+                        // ourselves)
+                        state.notify_others.notify_waiters();
+                    };
+                    let client = async {
+                        state.notify_others.notified().await;
+                    };
+                    // As soon as either the client or the server return from
+                    // their blocks, a change notification was recieved.
+                    // `biased` because we do not care the relative ordering.
+                    tokio::select! {biased; () = server => (), () = client => ()};
+                    yield ();
+                }
+            } else {
+                // There is no listener. Never signals.
+                yield futures_util::future::pending().await;
             }
         }
     }
