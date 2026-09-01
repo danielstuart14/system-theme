@@ -28,7 +28,7 @@ impl Platform {
         Err(Error::Unsupported)
     }
 
-    pub fn get_notify(&self) -> Arc<Notify> {
+    pub fn subscribe(&self) -> impl Stream<Item = ()> {
         (*DUMMY_NOTIFY).clone()
     }
 }

@@ -1,3 +1,5 @@
+use async_stream::stream;
+use futures_core::stream::Stream;
 use std::sync::Arc;
 use tokio::sync::Notify;
 use windows::{
@@ -127,8 +129,18 @@ impl Platform {
             .map(|color| color.into())
     }
 
-    pub fn get_notify(&self) -> Arc<Notify> {
-        self.notify.clone()
+    pub fn subscribe(&self) -> impl Stream<Item = ()> {
+        let notify = self.notify.clone();
+        stream! {
+            let mut notified = notify.notified();
+            loop {
+                // Wait for notification
+                notified.await;
+                // Create new notified before yielding
+                notified = notify.notified();
+                yield ();
+            }
+        }
     }
 
     fn get_ui_color(&self, color_type: UIColorType) -> Result<Color, Error> {

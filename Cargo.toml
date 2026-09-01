@@ -14,9 +14,10 @@ readme = "README.md"
 [dependencies]
 async-stream = "0.3.6"
 futures-core = "0.3.31"
+futures-lite = { version = "2.6.1", default-features = false, features = ["std"] }
 futures-util = "0.3.31"
 iced = { version = "0.14", optional = true }
-tokio = { version = "1.49.0", features = ["sync"] }
+tokio = { version = "1.49.0", features = ["macros", "sync"] }
 uuid = { version = "1.19.0", features = ["v4"] }
 
 [target.'cfg(windows)'.dependencies]

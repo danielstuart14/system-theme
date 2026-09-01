@@ -1,4 +1,6 @@
+use async_stream::stream;
 use core::{ffi::c_void, ptr};
+use futures_core::stream::Stream;
 use objc2::{
     available, define_class, msg_send,
     rc::Retained,
@@ -230,7 +232,17 @@ impl Platform {
         }
     }
 
-    pub fn get_notify(&self) -> Arc<Notify> {
-        self.notify.clone()
+    pub fn subscribe(&self) -> impl Stream<Item = ()> {
+        let notify = self.notify.clone();
+        stream! {
+            let mut notified = notify.notified();
+            loop {
+                // Wait for notification
+                notified.await;
+                // Create new notified before yielding
+                notified = notify.notified();
+                yield ();
+            }
+        }
     }
 }

@@ -10,7 +10,6 @@ mod theme;
 
 use error::Error;
 
-use async_stream::stream;
 use futures_core::stream::Stream;
 use std::hash::Hash;
 use uuid::Uuid;
@@ -74,16 +73,6 @@ impl SystemTheme {
 
     /// Subscribe to system theme changes.
     pub fn subscribe(&self) -> impl Stream<Item = ()> {
-        let notify = self.platform.get_notify();
-        stream! {
-            let mut notified = notify.notified();
-            loop {
-                // Wait for notification
-                notified.await;
-                // Create new notified before yielding
-                notified = notify.notified();
-                yield ();
-            }
-        }
+        self.platform.subscribe()
     }
 }
